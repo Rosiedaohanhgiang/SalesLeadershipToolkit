@@ -1,0 +1,754 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bộ Công cụ của Kiến trúc sư Bán hàng</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --color-orange: #FF9800;
+            --color-green: #009688;
+            --color-blue-light: #5C6BC0;
+            --color-blue-dark: #1a237e;
+        }
+        body {
+            font-family: 'Oswald', sans-serif;
+            background-color: #f0f2f5;
+        }
+        .main-tab-btn {
+            transition: all 0.3s ease;
+            border-bottom: 4px solid transparent;
+        }
+        .main-tab-btn.active {
+            color: var(--color-blue-dark);
+            border-bottom-color: var(--color-blue-dark);
+        }
+        .sub-tab-btn {
+            transition: all 0.2s ease-in-out;
+            border-left: 4px solid transparent;
+        }
+        .sub-tab-btn.active {
+            background-color: white;
+            border-left-color: var(--color-orange);
+            color: var(--color-orange);
+            font-weight: 700;
+        }
+        .mode-btn {
+            transition: all 0.2s ease-in-out;
+        }
+        .mode-btn.active {
+            background-color: var(--color-green);
+            color: white;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+        }
+        textarea, input {
+            transition: box-shadow 0.2s ease-in-out;
+        }
+        textarea:focus, input:focus {
+            box-shadow: 0 0 0 2px var(--color-blue-light);
+            outline: none;
+        }
+        .guide h3 {
+            font-size: 1.25rem;
+            font-weight: bold;
+            color: var(--color-blue-dark);
+            margin-top: 1.5rem;
+            margin-bottom: 0.5rem;
+        }
+        .guide ul {
+            list-style-type: disc;
+            padding-left: 1.5rem;
+            margin-bottom: 1rem;
+        }
+
+        @media print {
+            body * { visibility: hidden; }
+            .print-area, .print-area * { visibility: visible; }
+            .print-area { position: absolute; left: 0; top: 0; width: 100%; }
+            .no-print { display: none !important; }
+            * {
+                -webkit-print-color-adjust: exact !important;
+                color-adjust: exact !important;
+                color: #000 !important;
+            }
+        }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+
+    <div id="app" class="max-w-7xl mx-auto">
+        <header class="text-center mb-8">
+            <h1 class="text-4xl md:text-5xl font-bold text-[var(--color-blue-dark)]">CÔNG CỤ THỰC HÀNH CỦA KIẾN TRÚC SƯ</h1>
+            <p class="text-lg text-gray-600 mt-2">Thiết kế, Xây dựng và Vận hành Cỗ máy Bán hàng Hiệu suất cao</p>
+        </header>
+
+        <!-- Main Tab Navigation -->
+        <div class="flex justify-center border-b-2 border-gray-200 mb-6">
+            <button class="main-tab-btn text-xl font-bold py-3 px-8" data-main-tab="clarity">
+                <i class="fas fa-bullseye mr-2"></i> Sự Rõ ràng
+            </button>
+            <button class="main-tab-btn text-xl font-bold py-3 px-8" data-main-tab="systems">
+                <i class="fas fa-cogs mr-2"></i> Hệ thống
+            </button>
+            <button class="main-tab-btn text-xl font-bold py-3 px-8" data-main-tab="rituals">
+                <i class="fas fa-calendar-check mr-2"></i> Nghi thức
+            </button>
+        </div>
+
+        <!-- Main Content Area -->
+        <main id="main-content-area">
+            <!-- Content will be injected by JS based on main tab selection -->
+        </main>
+        
+        <footer class="text-center mt-12 text-sm text-gray-500">
+            <p>Học Liệu cho đào tạo.</p>
+            <p>Bản quyền thuộc về Rosie Đào Hạnh Giang CEO Build Talents</p>
+        </footer>
+    </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const app = {
+        state: {
+            activeMainTab: 'clarity',
+            activeSubTabs: {
+                clarity: 'job-description',
+                systems: 'sales-process',
+                rituals: 'stand-up'
+            },
+            activeModes: {}
+        },
+
+        templates: {
+            mainTabShell: (tabKey, subNavHTML) => `
+                <div class="grid md:grid-cols-4 gap-8">
+                    <aside class="md:col-span-1 no-print">
+                        <nav id="${tabKey}-sub-nav" class="flex flex-col space-y-2 bg-gray-100 p-4 rounded-lg">
+                            ${subNavHTML}
+                        </nav>
+                    </aside>
+                    <div id="${tabKey}-content-wrapper" class="md:col-span-3">
+                        <!-- Sub tab content will be rendered here -->
+                    </div>
+                </div>`,
+
+            subNavButton: (tabKey, subTabKey, icon, text) => `
+                <button class="sub-tab-btn w-full text-left p-3 rounded-md text-gray-700 font-medium" data-main-tab="${tabKey}" data-sub-tab="${subTabKey}">
+                    <i class="fas ${icon} w-6 mr-2"></i> ${text}
+                </button>`,
+            
+            subTabShell: (subTabKey) => `
+                <div class="flex items-center justify-between mb-6 no-print">
+                    <div class="flex border border-gray-300 rounded-lg p-1 bg-gray-100">
+                        <button class="mode-btn py-2 px-4 rounded-md" data-sub-tab="${subTabKey}" data-mode="guide">📖 Hướng dẫn</button>
+                        <button class="mode-btn py-2 px-4 rounded-md" data-sub-tab="${subTabKey}" data-mode="form">📝 Biểu mẫu trống</button>
+                        <button class="mode-btn py-2 px-4 rounded-md" data-sub-tab="${subTabKey}" data-mode="example">💡 Ví dụ Minh họa</button>
+                    </div>
+                    <button class="print-btn bg-[var(--color-orange)] text-white font-bold py-2 px-6 rounded-lg shadow-md hover:bg-opacity-90 flex items-center gap-2" data-target="${subTabKey}-print-area">
+                        <i class="fas fa-print"></i> In Biểu Mẫu
+                    </button>
+                </div>
+                <div id="${subTabKey}-print-area" class="print-area">
+                    <div id="${subTabKey}-content-area" class="bg-white p-6 md:p-8 rounded-lg shadow-lg">
+                        <!-- Form, Example or Guide content goes here -->
+                    </div>
+                </div>`,
+
+            // --- TOOL TEMPLATES ---
+            'job-description': {
+                guide: `
+                    <h2 class="text-2xl font-bold text-[var(--color-blue-dark)] mb-4">Cẩm nang: Bảng Mô tả Công việc theo Kết quả</h2>
+                    <div class="guide text-left">
+                        <h3>Mục đích & Giá trị</h3>
+                        <p>Bảng mô tả công việc (JD) truyền thống thường liệt kê các "nhiệm vụ". Cách tiếp cận này đo lường "sự bận rộn" chứ không phải "hiệu quả". JD theo kết quả tập trung vào <strong>kết quả đầu ra</strong> mà một người ở vị trí đó phải đạt được. Điều này giúp cả nhân viên và quản lý có một la bàn rõ ràng để định hướng mọi hành động.</p>
+                        <h3>Hướng dẫn từng bước</h3>
+                        <ul>
+                            <li><strong>Vị trí & Mục đích Cốt lõi:</strong> Xác định tên vị trí và trả lời câu hỏi "Tại sao vị trí này tồn tại?". Đây là "ngôi sao Bắc Đẩu" cho vai trò này.</li>
+                            <li><strong>Kết quả Then chốt (Key Results):</strong> Liệt kê 3-5 kết quả có thể đo lường được, cho thấy sự thành công. Đây là các "lagging indicators" (chỉ số kết quả). VD: "Tạo ra 15 SQLs/tháng".</li>
+                            <li><strong>Hoạt động Dẫn dắt (Leading Activities):</strong> Liệt kê các hoạt động hàng ngày, hàng tuần có thể kiểm soát được để tạo ra các Kết quả Then chốt ở trên. Đây là các "leading indicators" (chỉ số dẫn dắt). VD: "Thực hiện 50 cuộc gọi/ngày".</li>
+                            <li><strong>Thước đo Thành công Chính:</strong> Chọn ra 1 chỉ số quan trọng nhất để đánh giá sự thành công của vai trò này.</li>
+                        </ul>
+                        <h3>Bí quyết Thành công</h3>
+                        <ul>
+                            <li><strong>Ít hơn là nhiều hơn:</strong> Đừng liệt kê quá nhiều kết quả. 3-5 là con số lý tưởng.</li>
+                            <li><strong>Động từ mạnh:</strong> Bắt đầu mỗi kết quả bằng một động từ mạnh (Tạo ra, Đạt được, Tăng trưởng...).</li>
+                            <li><strong>Thảo luận cùng nhân viên:</strong> Xây dựng JD này cùng với người đang đảm nhận vị trí để có sự đồng thuận và cam kết.</li>
+                        </ul>
+                    </div>`,
+                form: `
+                    <h2 class="text-2xl font-bold text-[var(--color-blue-dark)] mb-6">Bảng Mô tả Công việc theo Kết quả</h2>
+                    <div class="space-y-6">
+                        <div><label class="font-bold text-gray-700">Vị trí:</label><input type="text" data-field="jd_role" class="w-full p-2 border rounded mt-1" placeholder="VD: Chuyên viên Phát triển Kinh doanh"></div>
+                        <div><label class="font-bold text-gray-700">Mục đích Cốt lõi (Tại sao vị trí này tồn tại?):</label><textarea data-field="jd_purpose" class="w-full p-2 border rounded mt-1 h-20" placeholder="VD: Để lấp đầy pipeline bán hàng với các cơ hội chất lượng..."></textarea></div>
+                        <div><label class="font-bold text-gray-700">3-5 Kết quả Then chốt (Key Results):</label><textarea data-field="jd_results" class="w-full p-2 border rounded mt-1 h-28" placeholder="1. Đạt 15 cuộc hẹn chất lượng/tháng.\n2. Tỷ lệ chuyển đổi từ cuộc hẹn sang cơ hội > 50%..."></textarea></div>
+                        <div><label class="font-bold text-gray-700">Các Hoạt động Dẫn dắt (Leading Activities):</label><textarea data-field="jd_activities" class="w-full p-2 border rounded mt-1 h-28" placeholder="- Thực hiện 50 cuộc gọi/ngày.\n- Gửi 50 email cá nhân hóa/ngày..."></textarea></div>
+                        <div><label class="font-bold text-gray-700">Thước đo Thành công Chính:</label><input type="text" data-field="jd_metrics" class="w-full p-2 border rounded mt-1" placeholder="VD: Số lượng SQLs (Sales Qualified Leads) được tạo ra mỗi tháng"></div>
+                    </div>`,
+                example: `
+                    <h2 class="text-2xl font-bold text-[var(--color-blue-dark)] mb-6">Ví dụ: Bảng Mô tả Công việc</h2>
+                    <div class="space-y-4 text-left p-4 border rounded-lg bg-gray-50">
+                        <p><strong>Vị trí:</strong> Chuyên viên Phát triển Kinh doanh (SDR)</p>
+                        <p><strong>Mục đích Cốt lõi:</strong> Để lấp đầy pipeline bán hàng với các cơ hội chất lượng thông qua việc tìm kiếm và nuôi dưỡng các khách hàng tiềm năng ở giai đoạn đầu.</p>
+                        <div><strong>3-5 Kết quả Then chốt (Key Results):</strong>
+                            <ul class="list-disc pl-6">
+                                <li>Tạo ra 15 Cuộc hẹn Chất lượng (SQLs) mỗi tháng.</li>
+                                <li>Đạt tỷ lệ chuyển đổi từ Cuộc gọi/Email sang Cuộc hẹn > 5%.</li>
+                                <li>100% dữ liệu khách hàng tiềm năng được cập nhật trên CRM theo đúng quy tắc.</li>
+                            </ul>
+                        </div>
+                        <div><strong>Các Hoạt động Dẫn dắt (Leading Activities):</strong>
+                             <ul class="list-disc pl-6">
+                                <li>Thực hiện 50-60 hoạt động tiếp cận (calls, emails) mỗi ngày.</li>
+                                <li>Nghiên cứu và xây dựng danh sách 10 khách hàng tiềm năng mới mỗi ngày.</li>
+                                <li>Tham gia 1 sự kiện networking mỗi tháng.</li>
+                            </ul>
+                        </div>
+                        <p><strong>Thước đo Thành công Chính:</strong> Số lượng SQLs được tạo ra và được đội ngũ Account Executive chấp nhận.</p>
+                    </div>`
+            },
+            'kpi-scorecard': {
+                guide: `
+                    <h2 class="text-2xl font-bold text-[var(--color-blue-dark)] mb-4">Cẩm nang: Bảng điểm KPI Cân bằng</h2>
+                    <div class="guide text-left">
+                        <h3>Mục đích & Giá trị</h3>
+                        <p>Một sai lầm phổ biến là chỉ quản lý các chỉ số kết quả (VD: Doanh thu). Vấn đề là bạn không thể "làm" ra doanh thu, bạn chỉ có thể thực hiện các "hành động" tạo ra nó. Bảng điểm này giúp kết nối mục tiêu cuối cùng (kết quả) với các hành động có thể kiểm soát hàng ngày (dẫn dắt), tạo ra một hệ thống đo lường hiệu quả và có thể dự báo.</p>
+                        <h3>Hướng dẫn từng bước</h3>
+                        <ul>
+                            <li><strong>KPI Kết quả (Lagging):</strong> Bắt đầu bằng mục tiêu cuối cùng bạn muốn đạt được (VD: Doanh thu quý).</li>
+                            <li><strong>KPI Dẫn dắt (Leading):</strong> Đặt câu hỏi "Để đạt được KPI Kết quả đó, chúng ta cần phải làm tốt những hoạt động nào?". Liệt kê các hoạt động đó. VD: Để có doanh thu, cần có deal thắng. Để có deal, cần có demo. Để có demo, cần có cuộc gọi...</li>
+                            <li><strong>Mục tiêu:</strong> Gán một con số cụ thể cho mỗi KPI dẫn dắt. Sử dụng dữ liệu lịch sử (tỷ lệ chuyển đổi) để tính toán ngược từ KPI Kết quả.</li>
+                        </ul>
+                        <h3>Bí quyết Thành công</h3>
+                        <ul>
+                            <li><strong>Tập trung vào số ít quan trọng:</strong> Chọn 3-4 KPI dẫn dắt quan trọng nhất, đừng đo lường mọi thứ.</li>
+                            <li><strong>Hiển thị công khai:</strong> Treo bảng điểm ở nơi mọi người có thể thấy để tạo ra sự minh bạch và động lực.</li>
+                            <li><strong>Review hàng tuần:</strong> Dành thời gian trong buổi họp đầu tuần để xem lại các chỉ số dẫn dắt và điều chỉnh hành động kịp thời.</li>
+                        </ul>
+                    </div>`,
+                form: `
+                    <h2 class="text-2xl font-bold text-[var(--color-blue-dark)] mb-6">Bảng điểm KPI Dẫn dắt & Kết quả</h2>
+                    <div class="space-y-4">
+                        <div class="bg-gray-100 p-3 rounded-lg">
+                            <label class="font-bold text-gray-700">1. KPI KẾT QUẢ (Lagging Indicator):</label>
+                            <input type="text" data-field="kpi_lagging" class="w-full p-2 border rounded mt-1" placeholder="VD: Đạt 2 tỷ VNĐ doanh thu trong Quý 4">
+                        </div>
+                        <div class="bg-gray-100 p-3 rounded-lg">
+                             <label class="font-bold text-gray-700">2. CÁC KPI DẪN DẮT (Leading Indicators) tương ứng:</label>
+                             <div class="overflow-x-auto mt-2">
+                                <table class="w-full">
+                                    <thead class="bg-gray-200"><tr><th class="p-2">KPI Dẫn dắt</th><th class="p-2">Mục tiêu</th><th class="p-2">Lý do/Cách tính</th></tr></thead>
+                                    <tbody>
+                                        <tr><td class="p-2 border"><input type="text" data-field="kpi_l1_name" class="w-full bg-transparent" placeholder="VD: Số lượng Demo thực hiện/tuần"></td><td class="p-2 border"><input type="text" data-field="kpi_l1_target" class="w-full bg-transparent" placeholder="VD: 5 demo/tuần/sales"></td><td class="p-2 border"><input type="text" data-field="kpi_l1_logic" class="w-full bg-transparent" placeholder="VD: Win rate 20%, deal size 100tr"></td></tr>
+                                        <tr><td class="p-2 border"><input type="text" data-field="kpi_l2_name" class="w-full bg-transparent" placeholder="VD: Số lượng Cơ hội mới tạo ra/tuần"></td><td class="p-2 border"><input type="text" data-field="kpi_l2_target" class="w-full bg-transparent" placeholder="VD: 10 cơ hội/tuần"></td><td class="p-2 border"><input type="text" data-field="kpi_l2_logic" class="w-full bg-transparent" placeholder="VD: Tỷ lệ C->D là 50%"></td></tr>
+                                        <tr><td class="p-2 border"><input type="text" data-field="kpi_l3_name" class="w-full bg-transparent" placeholder="VD: Thời gian phản hồi lead"></td><td class="p-2 border"><input type="text" data-field="kpi_l3_target" class="w-full bg-transparent" placeholder="VD: < 5 phút"></td><td class="p-2 border"><input type="text" data-field="kpi_l3_logic" class="w-full bg-transparent" placeholder="VD: Tỷ lệ chuyển đổi cao hơn 8 lần"></td></tr>
+                                    </tbody>
+                                </table>
+                             </div>
+                        </div>
+                    </div>`,
+                example: `
+                    <h2 class="text-2xl font-bold text-[var(--color-blue-dark)] mb-6">Ví dụ: Bảng điểm KPI</h2>
+                    <div class="p-4 border rounded-lg bg-gray-50">
+                        <p class="mb-4"><strong>Logic:</strong> Chúng ta không thể trực tiếp quản lý "Doanh thu", nhưng chúng ta có thể quản lý các "hoạt động" tạo ra doanh thu. Bảng điểm này kết nối mục tiêu cuối cùng với các hành động hàng ngày.</p>
+                        <p class="font-bold text-lg mb-2">KPI Kết quả (Lagging): Đạt 2 tỷ VNĐ doanh thu trong Quý 4.</p>
+                        <div class="overflow-x-auto">
+                           <table class="w-full text-left border-collapse">
+                                <thead class="bg-gray-200 text-gray-700"><tr><th class="p-2 border">KPI Dẫn dắt</th><th class="p-2 border">Mục tiêu</th><th class="p-2 border">Lý do/Cách tính</th></tr></thead>
+                                <tbody>
+                                    <tr><td class="p-2 border font-medium">Số lượng Demo thực hiện/tuần</td><td class="p-2 border">5 demo/tuần/sales</td><td class="p-2 border">Win rate 20%, deal size 100tr -> 1 deal/tuần/sales</td></tr>
+                                    <tr><td class="p-2 border font-medium">Số lượng Cơ hội mới tạo ra/tuần</td><td class="p-2 border">10 cơ hội/tuần</td><td class="p-2 border">Tỷ lệ chuyển đổi Cơ hội -> Demo là 50%</td></tr>
+                                    <tr><td class="p-2 border font-medium">Thời gian phản hồi lead</td><td class="p-2 border">&lt; 5 phút</td><td class="p-2 border">Tỷ lệ chuyển đổi cao hơn 8 lần</td></tr>
+                                </tbody>
+                           </table>
+                        </div>
+                    </div>`
+            },
+            'customer-journey': {
+                guide: `
+                     <h2 class="text-2xl font-bold text-[var(--color-blue-dark)] mb-4">Cẩm nang: Bản đồ Hành trình Khách hàng</h2>
+                    <div class="guide text-left">
+                        <h3>Mục đích & Giá trị</h3>
+                        <p>Công cụ này giúp bạn đặt mình vào vị trí của khách hàng, thấu hiểu những gì họ làm, nghĩ, và cảm thấy ở từng giai đoạn trong quá trình mua hàng. Việc này giúp xác định các "khoảnh khắc sự thật" (moment of truth), tìm ra các điểm yếu trong quy trình bán hàng và các cơ hội để tạo ra trải nghiệm vượt trội.</p>
+                        <h3>Hướng dẫn từng bước</h3>
+                        <ul>
+                            <li><strong>Xác định các Giai đoạn:</strong> Chia nhỏ quá trình mua hàng thành các giai đoạn chính (VD: Nhận biết, Cân nhắc, Quyết định, Giữ chân).</li>
+                            <li><strong>Hành động của KH:</strong> Ở mỗi giai đoạn, họ làm gì? (VD: Tìm kiếm Google, đọc review).</li>
+                            <li><strong>Suy nghĩ/Cảm xúc:</strong> Họ nghĩ gì, cảm thấy thế nào? (VD: "Phân vân", "Háo hức", "Lo lắng").</li>
+                            <li><strong>Điểm chạm:</strong> Họ tương tác với công ty bạn qua kênh nào? (VD: Website, email, nhân viên sales).</li>
+                            <li><strong>Cơ hội của Sales:</strong> Dựa trên những điều trên, đội ngũ sales có thể làm gì để hỗ trợ và thúc đẩy khách hàng?</li>
+                        </ul>
+                        <h3>Bí quyết Thành công</h3>
+                        <ul>
+                            <li><strong>Dựa trên thực tế:</strong> Đừng đoán! Hãy phỏng vấn khách hàng thực sự để xây dựng bản đồ này.</li>
+                            <li><strong>Tập trung vào "nỗi đau":</strong> Tìm ra những điểm mà khách hàng cảm thấy khó khăn, bối rối nhất. Đó là nơi bạn có thể tạo ra nhiều giá trị nhất.</li>
+                            <li><strong>Đây là tài liệu sống:</strong> Cập nhật bản đồ này thường xuyên khi bạn có thêm thông tin chi tiết về khách hàng.</li>
+                        </ul>
+                    </div>`,
+                form: `
+                    <h2 class="text-2xl font-bold text-[var(--color-blue-dark)] mb-6">Bản đồ Hành trình Khách hàng</h2>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead><tr class="bg-gray-100"><th class="p-2 border">Giai đoạn</th><th class="p-2 border">Hành động của KH</th><th class="p-2 border">Suy nghĩ/Cảm xúc</th><th class="p-2 border">Điểm chạm</th><th class="p-2 border">Cơ hội của Sales</th></tr></thead>
+                            <tbody>
+                                <tr><td class="p-2 border font-bold">1. Nhận biết</td><td class="p-2 border"><textarea data-field="cj_a_action" class="w-full bg-transparent h-24"></textarea></td><td class="p-2 border"><textarea data-field="cj_a_emotion" class="w-full bg-transparent h-24"></textarea></td><td class="p-2 border"><textarea data-field="cj_a_touchpoint" class="w-full bg-transparent h-24"></textarea></td><td class="p-2 border"><textarea data-field="cj_a_opportunity" class="w-full bg-transparent h-24"></textarea></td></tr>
+                                <tr><td class="p-2 border font-bold">2. Cân nhắc</td><td class="p-2 border"><textarea data-field="cj_c_action" class="w-full bg-transparent h-24"></textarea></td><td class="p-2 border"><textarea data-field="cj_c_emotion" class="w-full bg-transparent h-24"></textarea></td><td class="p-2 border"><textarea data-field="cj_c_touchpoint" class="w-full bg-transparent h-24"></textarea></td><td class="p-2 border"><textarea data-field="cj_c_opportunity" class="w-full bg-transparent h-24"></textarea></td></tr>
+                                <tr><td class="p-2 border font-bold">3. Quyết định</td><td class="p-2 border"><textarea data-field="cj_d_action" class="w-full bg-transparent h-24"></textarea></td><td class="p-2 border"><textarea data-field="cj_d_emotion" class="w-full bg-transparent h-24"></textarea></td><td class="p-2 border"><textarea data-field="cj_d_touchpoint" class="w-full bg-transparent h-24"></textarea></td><td class="p-2 border"><textarea data-field="cj_d_opportunity" class="w-full bg-transparent h-24"></textarea></td></tr>
+                                <tr><td class="p-2 border font-bold">4. Giữ chân</td><td class="p-2 border"><textarea data-field="cj_r_action" class="w-full bg-transparent h-24"></textarea></td><td class="p-2 border"><textarea data-field="cj_r_emotion" class="w-full bg-transparent h-24"></textarea></td><td class="p-2 border"><textarea data-field="cj_r_touchpoint" class="w-full bg-transparent h-24"></textarea></td><td class="p-2 border"><textarea data-field="cj_r_opportunity" class="w-full bg-transparent h-24"></textarea></td></tr>
+                            </tbody>
+                        </table>
+                    </div>`,
+                example: `
+                    <h2 class="text-2xl font-bold text-[var(--color-blue-dark)] mb-6">Ví dụ: Bản đồ Hành trình Khách hàng</h2>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse text-sm">
+                            <thead><tr class="bg-gray-100 text-gray-700"><th class="p-2 border">Giai đoạn</th><th class="p-2 border">Hành động của KH</th><th class="p-2 border">Suy nghĩ/Cảm xúc</th><th class="p-2 border">Điểm chạm</th><th class="p-2 border">Cơ hội của Sales</th></tr></thead>
+                            <tbody>
+                                <tr><td class="p-2 border font-bold align-top">1. Nhận biết</td><td class="p-2 border align-top">Tìm Google về "phần mềm CRM cho SME", đọc blog so sánh.</td><td class="p-2 border align-top">"Mình đang bị quá tải với Excel", "Có quá nhiều lựa chọn, thật bối rối".</td><td class="p-2 border align-top">Website, Mạng xã hội, SEO/SEM.</td><td class="p-2 border align-top">Cung cấp checklist "5 dấu hiệu cần CRM", webinar miễn phí để giáo dục thị trường.</td></tr>
+                                <tr><td class="p-2 border font-bold align-top">2. Cân nhắc</td><td class="p-2 border align-top">So sánh 3-4 nhà cung cấp, xem video demo, tải case study.</td><td class="p-2 border align-top">"Bên nào dễ dùng hơn?", "Giá này có hợp lý không?", "Liệu nó có thực sự giải quyết vấn đề của mình?".</td><td class="p-2 border align-top">Trang giá, Case study, Email nurturing.</td><td class="p-2 border align-top">Gửi email so sánh tính năng một cách khách quan, mời tham gia demo cá nhân hóa theo ngành nghề.</td></tr>
+                                <tr><td class="p-2 border font-bold align-top">3. Quyết định</td><td class="p-2 border align-top">Yêu cầu báo giá, hỏi về hỗ trợ kỹ thuật, gặp gỡ team.</td><td class="p-2 border align-top">"Liệu team của mình có dùng được không?", "Triển khai có lâu không?", "Rủi ro là gì?".</td><td class="p-2 border align-top">Cuộc gọi bán hàng, Báo giá, Hợp đồng.</td><td class="p-2 border align-top">Cung cấp tài liệu cho người dùng cuối, cam kết về thời gian onboarding, giới thiệu với một khách hàng cũ.</td></tr>
+                                <tr><td class="p-2 border font-bold align-top">4. Giữ chân</td><td class="p-2 border align-top">Sử dụng sản phẩm, liên hệ hỗ trợ khi có vấn đề, mong muốn có tính năng mới.</td><td class="p-2 border align-top">"Làm sao để dùng tính năng X?", "Ước gì nó có Y", "Hài lòng với dịch vụ".</td><td class="p-2 border align-top">Email hỗ trợ, các buổi QBR, khảo sát.</td><td class="p-2 border align-top">Chủ động hỏi thăm, giới thiệu tính năng mới, bán thêm/bán chéo, xin lời giới thiệu.</td></tr>
+                            </tbody>
+                        </table>
+                    </div>`
+            },
+            'sales-process': {
+                guide: `
+                    <h2 class="text-2xl font-bold text-[var(--color-blue-dark)] mb-4">Cẩm nang: Quy trình Bán hàng 5 bước</h2>
+                    <div class="guide text-left">
+                        <h3>Mục đích & Giá trị</h3>
+                        <p>Một quy trình bán hàng được chuẩn hóa giống như một dây chuyền lắp ráp hiệu quả. Nó đảm bảo mọi nhân viên đều tuân theo các bước đi đã được chứng minh là thành công, giúp tăng tỷ lệ thắng, rút ngắn chu kỳ bán hàng và giúp việc huấn luyện trở nên dễ dàng hơn. Nó biến nghệ thuật bán hàng thành một khoa học có thể nhân rộng.</p>
+                        <h3>Hướng dẫn từng bước</h3>
+                        <ul>
+                            <li><strong>Xác định các Bước:</strong> Chia quy trình thành các bước chính, rõ ràng. Mô hình 5 bước (Tìm kiếm > Phân loại > Trình bày > Chốt > Chăm sóc) là một khởi đầu tốt.</li>
+                            <li><strong>Mục tiêu của mỗi bước:</strong> Mỗi bước phải có một mục tiêu cụ thể. VD: Mục tiêu của bước "Tìm kiếm" không phải là bán hàng, mà là có được một cuộc hẹn.</li>
+                            <li><strong>Hành động cụ thể:</strong> Nhân viên cần làm gì ở mỗi bước? (VD: Gửi 20 email, thực hiện 30 cuộc gọi).</li>
+                            <li><strong>Exit Criteria (Tiêu chí chuyển bước):</strong> Điều kiện cần là gì để một cơ hội được chuyển sang bước tiếp theo? (VD: Khách hàng xác nhận có ngân sách). Điều này cực kỳ quan trọng để giữ cho pipeline luôn "sạch".</li>
+                        </ul>
+                        <h3>Bí quyết Thành công</h3>
+                        <ul>
+                            <li><strong>Liên kết với CRM:</strong> Các bước trong quy trình phải tương ứng với các giai đoạn (stages) trong CRM của bạn.</li>
+                            <li><strong>Không phải là bất biến:</strong> Thường xuyên xem xét và tối ưu hóa quy trình dựa trên dữ liệu thực tế.</li>
+                            <li><strong>Huấn luyện, huấn luyện, huấn luyện:</strong> Xây dựng quy trình là bước 1, đảm bảo mọi người tuân thủ và thành thạo nó là bước 2 và quan trọng hơn.</li>
+                        </ul>
+                    </div>`,
+                form: `
+                    <h2 class="text-2xl font-bold text-[var(--color-blue-dark)] mb-6">Thiết kế Quy trình Bán hàng</h2>
+                     <div class="space-y-6">
+                        <div class="p-3 bg-gray-50 rounded-lg border">
+                            <label class="font-bold text-gray-700">Bước 1: Tìm kiếm & Tiếp cận (Prospecting)</label>
+                            <textarea data-field="sp_step1" class="w-full p-2 border rounded mt-2 h-24" placeholder="Mục tiêu của bước? Hành động cụ thể? Tiêu chí để chuyển sang bước 2?"></textarea>
+                        </div>
+                        <div class="p-3 bg-gray-50 rounded-lg border">
+                            <label class="font-bold text-gray-700">Bước 2: Phân loại & Khám phá (Qualifying)</label>
+                            <textarea data-field="sp_step2" class="w-full p-2 border rounded mt-2 h-24" placeholder="Mục tiêu của bước? Hành động cụ thể? Tiêu chí để chuyển sang bước 3?"></textarea>
+                        </div>
+                        <div class="p-3 bg-gray-50 rounded-lg border">
+                            <label class="font-bold text-gray-700">Bước 3: Trình bày Giải pháp (Presenting)</label>
+                            <textarea data-field="sp_step3" class="w-full p-2 border rounded mt-2 h-24" placeholder="Mục tiêu của bước? Hành động cụ thể? Tiêu chí để chuyển sang bước 4?"></textarea>
+                        </div>
+                        <div class="p-3 bg-gray-50 rounded-lg border">
+                            <label class="font-bold text-gray-700">Bước 4: Xử lý Phản đối & Chốt (Closing)</label>
+                            <textarea data-field="sp_step4" class="w-full p-2 border rounded mt-2 h-24" placeholder="Mục tiêu của bước? Hành động cụ thể? Tiêu chí để chuyển sang bước 5?"></textarea>
+                        </div>
+                        <div class="p-3 bg-gray-50 rounded-lg border">
+                            <label class="font-bold text-gray-700">Bước 5: Chăm sóc & Phát triển (Nurturing)</label>
+                            <textarea data-field="sp_step5" class="w-full p-2 border rounded mt-2 h-24" placeholder="Mục tiêu của bước? Hành động cụ thể?"></textarea>
+                        </div>
+                    </div>`,
+                example: `
+                    <h2 class="text-2xl font-bold text-[var(--color-blue-dark)] mb-6">Ví dụ: Quy trình Bán hàng 5 bước</h2>
+                     <div class="space-y-4 text-left">
+                        <div class="p-3 bg-gray-50 rounded-lg border"><strong>Bước 1: Tìm kiếm & Tiếp cận</strong><br> - <b>Mục tiêu:</b> Có được một cuộc hẹn khám phá 15 phút.<br> - <b>Hành động:</b> Cold call, email, social selling theo kịch bản.<br> - <b>Exit Criteria:</b> Lịch hẹn được xác nhận trong calendar.</div>
+                        <div class="p-3 bg-gray-50 rounded-lg border"><strong>Bước 2: Phân loại & Khám phá</strong><br> - <b>Mục tiêu:</b> Xác định khách hàng có phù hợp (BANT).<br> - <b>Hành động:</b> Thực hiện cuộc gọi khám phá, đặt câu hỏi về Budget, Authority, Need, Timeline.<br> - <b>Exit Criteria:</b> Hoàn thành checklist BANT trên CRM.</div>
+                        <div class="p-3 bg-gray-50 rounded-lg border"><strong>Bước 3: Trình bày Giải pháp</strong><br> - <b>Mục tiêu:</b> Cho thấy sản phẩm giải quyết vấn đề của họ và nhận được sự đồng thuận.<br> - <b>Hành động:</b> Demo cá nhân hóa, trình bày case study, chứng minh ROI.<br> - <b>Exit Criteria:</b> Khách hàng xác nhận "Đây đúng là giải pháp chúng tôi cần".</div>
+                        <div class="p-3 bg-gray-50 rounded-lg border"><strong>Bước 4: Xử lý Phản đối & Chốt</strong><br> - <b>Mục tiêu:</b> Đạt được cam kết và nhận được hợp đồng đã ký.<br> - <b>Hành động:</b> Sử dụng playbook, gửi báo giá, đề nghị bước tiếp theo rõ ràng.<br> - <b>Exit Criteria:</b> Nhận được hợp đồng có chữ ký.</div>
+                        <div class="p-3 bg-gray-50 rounded-lg border"><strong>Bước 5: Chăm sóc & Phát triển</strong><br> - <b>Mục tiêu:</b> Biến khách hàng thành người hâm mộ và tìm cơ hội mới.<br> - <b>Hành động:</b> Chuyển giao cho team CS, thực hiện QBR, giới thiệu sản phẩm mới.<br> - <b>Exit Criteria:</b> Hoàn thành buổi onboarding thành công.</div>
+                    </div>`
+            },
+            'objection-playbook': {
+                guide: `
+                    <h2 class="text-2xl font-bold text-[var(--color-blue-dark)] mb-4">Cẩm nang: Playbook Xử lý Từ chối</h2>
+                    <div class="guide text-left">
+                        <h3>Mục đích & Giá trị</h3>
+                        <p>Lời từ chối là một phần không thể thiếu trong bán hàng. Một người bán hàng chuyên nghiệp không sợ hãi chúng, mà xem chúng là một cơ hội. Playbook này giúp chuẩn bị trước các kịch bản cho những lời từ chối phổ biến nhất, giúp nhân viên tự tin, bình tĩnh và biến lời từ chối thành một cuộc đối thoại hiệu quả.</p>
+                        <h3>Hướng dẫn từng bước</h3>
+                        <ul>
+                            <li><strong>Liệt kê các lời từ chối:</strong> Cùng team liệt kê 5-10 lời từ chối phổ biến nhất (về giá, đối thủ, thời gian...).</li>
+                            <li><strong>Tìm ẩn ý:</strong> Với mỗi lời từ chối, hãy thảo luận "Khách hàng thực sự có ý gì khi nói vậy?". (VD: "Giá cao" có thể có nghĩa là "Tôi chưa thấy đủ giá trị").</li>
+                            <li><strong>Xây dựng kịch bản phản hồi:</strong> Áp dụng công thức 3 bước: <strong>1. Làm rõ</strong> (Đặt câu hỏi để hiểu sâu hơn), <strong>2. Diễn dịch & Tái định vị</strong> (Thể hiện sự đồng cảm và chuyển hướng cuộc trò chuyện), <strong>3. Giải quyết</strong> (Đưa ra một giải pháp hoặc bước tiếp theo).</li>
+                        </ul>
+                        <h3>Bí quyết Thành công</h3>
+                        <ul>
+                            <li><strong>Nhập vai (Role-play):</strong> Đừng chỉ viết ra, hãy thực hành playbook này thường xuyên trong các buổi họp team.</li>
+                            <li><strong>Không phải là học thuộc lòng:</strong> Mục đích là để nhân viên hiểu được logic, không phải đọc thuộc kịch bản một cách máy móc.</li>
+                            <li><strong>Cập nhật liên tục:</strong> Thêm các lời từ chối mới và các cách xử lý hiệu quả vào playbook.</li>
+                        </ul>
+                    </div>`,
+                form: `
+                    <h2 class="text-2xl font-bold text-[var(--color-blue-dark)] mb-6">Playbook Xử lý Từ chối</h2>
+                    <div class="space-y-6">
+                        <div><label class="font-bold text-gray-700">Lời từ chối thường gặp:</label><input type="text" data-field="op_objection" class="w-full p-2 border rounded mt-1" placeholder="VD: 'Giá bên em cao quá!'"></div>
+                        <div><label class="font-bold text-gray-700">Ẩn ý/Lý do thực sự đằng sau:</label><textarea data-field="op_reason" class="w-full p-2 border rounded mt-1 h-20" placeholder="VD: Họ chưa thấy đủ giá trị, họ không có đủ ngân sách, họ muốn có cảm giác chiến thắng khi đàm phán..."></textarea></div>
+                        <div><label class="font-bold text-gray-700">Kịch bản phản hồi (Làm rõ > Diễn dịch > Giải quyết):</label><textarea data-field="op_response" class="w-full p-2 border rounded mt-1 h-28" placeholder="1. Làm rõ: 'Không biết mình đang so sánh với giải pháp nào ạ?'\n2. Diễn dịch: 'Dường như vấn đề không chỉ là giá, mà là đảm bảo khoản đầu tư này mang lại ROI tốt nhất...'\n3. Giải quyết: 'Em có thể chuẩn bị một bản tính ROI dự kiến cho mình...'"></textarea></div>
+                    </div>`,
+                example: `
+                    <h2 class="text-2xl font-bold text-[var(--color-blue-dark)] mb-6">Ví dụ: Playbook Xử lý Từ chối</h2>
+                    <div class="p-4 border rounded-lg bg-gray-50 space-y-4">
+                        <div>
+                            <p><strong>Lời từ chối:</strong> "Anh cần phải hỏi ý kiến sếp."</p>
+                            <p><strong>Ẩn ý/Lý do thực sự:</strong> 1. Họ không phải người ra quyết định. 2. Họ chưa đủ tự tin để trình bày giải pháp của ta với sếp. 3. Đây là cách lịch sự để từ chối.</p>
+                            <div><strong>Kịch bản phản hồi:</strong>
+                                <ul class="list-disc pl-6">
+                                    <li><strong>Làm rõ:</strong> "Dạ, điều đó hoàn toàn hợp lý ạ. Không biết sếp của anh/chị thường quan tâm đến những yếu tố nào nhất khi duyệt một giải pháp mới ạ?"</li>
+                                    <li><strong>Trao quyền:</strong> "Để giúp anh/chị trình bày dễ dàng hơn, em có thể chuẩn bị một bản tóm tắt 1 trang về lợi ích và ROI cho sếp được không ạ?"</li>
+                                    <li><strong>Mời tham gia:</strong> "Hay là chúng ta có thể có một buổi trao đổi nhanh 15 phút cùng với sếp của anh/chị vào tuần tới không ạ?"</li>
+                                </ul>
+                            </div>
+                        </div>
+                        <hr>
+                         <div>
+                            <p><strong>Lời từ chối:</strong> "Giá bên em cao quá!"</p>
+                            <p><strong>Ẩn ý/Lý do thực sự:</strong> 1. Họ chưa thấy đủ giá trị tương xứng. 2. Họ không có đủ ngân sách. 3. Họ đang trong quá trình đàm phán.</p>
+                            <div><strong>Kịch bản phản hồi:</strong>
+                                <ul class="list-disc pl-6">
+                                    <li><strong>Làm rõ:</strong> "'Cao' là một khái niệm tương đối, cảm ơn anh/chị đã chia sẻ. Không biết mình đang so sánh với giải pháp nào, hay 'cao' so với ngân sách dự kiến của mình ạ?"</li>
+                                    <li><strong>Diễn dịch & Xây dựng giá trị:</strong> "Em hiểu. Dường như mối bận tâm chính là làm sao để đảm bảo khoản đầu tư này mang lại hiệu quả cao nhất. Em xin phép chia sẻ lại về 3 điểm mà giải pháp của em sẽ giúp mình tiết kiệm chi phí vận hành..."</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>`
+            },
+            'crm-rule': {
+                guide: `
+                     <h2 class="text-2xl font-bold text-[var(--color-blue-dark)] mb-4">Cẩm nang: Quy tắc Vàng về CRM</h2>
+                    <div class="guide text-left">
+                        <h3>Mục đích & Giá trị</h3>
+                        <p>CRM (Customer Relationship Management) chỉ hữu ích khi dữ liệu trong đó chính xác và cập nhật. Nếu không có quy tắc rõ ràng, CRM sẽ nhanh chóng trở thành một "bãi rác dữ liệu". Việc thiết lập một vài quy tắc vàng, đơn giản, dễ nhớ sẽ giúp xây dựng thói quen tốt cho cả đội, biến CRM thành một vũ khí mạnh mẽ thay vì một gánh nặng.</p>
+                        <h3>Hướng dẫn từng bước</h3>
+                        <ul>
+                            <li><strong>Xác định vấn đề lớn nhất:</strong> Vấn đề về dữ liệu CRM của bạn là gì? (VD: không cập nhật, thiếu thông tin, sai định dạng).</li>
+                            <li><strong>Tạo ra một quy tắc:</strong> Dựa trên vấn đề đó, tạo ra một quy tắc ngắn gọn, dễ nhớ.</li>
+                            <li><strong>Giải thích "Tại sao":</strong> Điều quan trọng nhất là giải thích cho team hiểu tại sao quy tắc này lại quan trọng với họ và với cả công ty.</li>
+                        </ul>
+                        <h3>Bí quyết Thành công</h3>
+                        <ul>
+                            <li><strong>Chỉ 1-3 quy tắc vàng:</strong> Đừng tạo ra một danh sách dài các quy định. Hãy tập trung vào những điều quan trọng nhất.</li>
+                            <li><strong>Quản lý làm gương:</strong> Nếu quản lý không tuân thủ, nhân viên cũng sẽ không.</li>
+                            <li><strong>Tự động hóa và kiểm tra:</strong> Sử dụng các công cụ trong CRM để tự động nhắc nhở và tạo báo cáo về mức độ tuân thủ.</li>
+                        </ul>
+                    </div>`,
+                form: `
+                     <h2 class="text-2xl font-bold text-[var(--color-blue-dark)] mb-6">Quy tắc Vàng về CRM</h2>
+                    <div class="space-y-6">
+                        <div><label class="font-bold text-gray-700">Tên quy tắc (Ngắn gọn, dễ nhớ):</label><input type="text" data-field="crm_name" class="w-full p-2 border rounded mt-1" placeholder="VD: Quy tắc cập nhật dưới 3 phút"></div>
+                        <div><label class="font-bold text-gray-700">Mô tả quy tắc:</label><textarea data-field="crm_desc" class="w-full p-2 border rounded mt-1 h-20" placeholder="VD: Ngay sau mỗi tương tác (cuộc gọi, email, cuộc họp) với khách hàng, nhân viên phải dành ra tối đa 3 phút để cập nhật thông tin lên CRM."></textarea></div>
+                        <div><label class="font-bold text-gray-700">Tại sao quy tắc này quan trọng?</label><textarea data-field="crm_why" class="w-full p-2 border rounded mt-1 h-24" placeholder="VD: 1. Đảm bảo dữ liệu luôn chính xác. 2. Giúp quản lý có cái nhìn tổng quan real-time. 3. Giúp các thành viên khác có thể hỗ trợ khi cần."></textarea></div>
+                    </div>`,
+                example: `
+                    <h2 class="text-2xl font-bold text-[var(--color-blue-dark)] mb-6">Ví dụ: Quy tắc Vàng về CRM</h2>
+                     <div class="p-4 border rounded-lg bg-gray-50">
+                        <p><strong>Tên quy tắc:</strong> "Nếu nó không có trên CRM, nó không tồn tại."</p>
+                        <p><strong>Mô tả:</strong> Mọi thông tin (ghi chú cuộc gọi), tương tác (email, call log), và bước tiếp theo (task) liên quan đến khách hàng phải được ghi nhận trên CRM. Báo cáo doanh số và hiệu suất sẽ chỉ được tính dựa trên dữ liệu từ CRM.</p>
+                        <p><strong>Tại sao quan trọng?</strong>
+                             <ul class="list-disc pl-6">
+                                <li>Tạo ra một "nguồn sự thật duy nhất" (single source of truth) cho cả đội.</li>
+                                <li>Đảm bảo tính minh bạch và công bằng trong việc đánh giá.</li>
+                                <li>Giúp dự báo doanh thu chính xác hơn và không để lọt bất kỳ cơ hội nào.</li>
+                                <li>Giúp các thành viên khác có thể hỗ trợ khách hàng ngay lập tức khi cần.</li>
+                            </ul>
+                        </p>
+                    </div>`
+            },
+            'stand-up': {
+                guide: `
+                     <h2 class="text-2xl font-bold text-[var(--color-blue-dark)] mb-4">Cẩm nang: Họp đầu tuần 15 phút (Stand-up)</h2>
+                    <div class="guide text-left">
+                        <h3>Mục đích & Giá trị</h3>
+                        <p>Buổi họp này không phải để báo cáo chi li cho quản lý. Mục đích chính của nó là tạo ra sự kết nối, minh bạch và năng lượng cho cả tuần. Nó giúp các thành viên trong nhóm đồng bộ hóa thông tin, nhận diện các khó khăn sớm và hỗ trợ lẫn nhau. Việc giữ nó trong 15 phút và đứng (stand-up) đảm bảo sự tập trung và hiệu quả.</p>
+                        <h3>Hướng dẫn từng bước</h3>
+                        <ul>
+                            <li><strong>Thời gian cố định:</strong> Chọn một giờ cố định (VD: 9h sáng thứ Hai) và tuân thủ nghiêm ngặt.</li>
+                            <li><strong>Mỗi người trả lời 3 câu hỏi:</strong> Mỗi thành viên lần lượt chia sẻ ngắn gọn (dưới 2 phút):
+                                <ol class="list-decimal pl-5">
+                                    <li>Tuần trước, thành tựu lớn nhất của tôi là gì?</li>
+                                    <li>Tuần này, ưu tiên SỐ 1 của tôi là gì?</li>
+                                    <li>Tôi đang gặp khó khăn/rào cản nào?</li>
+                                </ol>
+                            </li>
+                            <li><strong>"Parking Lot":</strong> Nếu có một vấn đề cần thảo luận sâu hơn, hãy ghi nó lại để giải quyết sau buổi họp, không làm ảnh hưởng đến thời gian của cả team.</li>
+                        </ul>
+                        <h3>Bí quyết Thành công</h3>
+                        <ul>
+                            <li><strong>Đúng giờ, kết thúc đúng giờ:</strong> Tôn trọng thời gian của mọi người là điều tối quan trọng.</li>
+                            <li><strong>Quản lý nói cuối cùng:</strong> Hãy để nhân viên chia sẻ trước để tạo không gian an toàn.</li>
+                            <li><strong>Tập trung vào giải pháp:</strong> Khi một rào cản được nêu ra, nhanh chóng xác định ai có thể hỗ trợ và hẹn một cuộc trao đổi riêng.</li>
+                        </ul>
+                    </div>`,
+                form: `
+                    <h2 class="text-2xl font-bold text-[var(--color-blue-dark)] mb-6">Biên bản Họp đầu tuần (Stand-up)</h2>
+                    <div class="space-y-6">
+                        <div><label class="font-bold text-gray-700">Ngày:</label><input type="date" data-field="su_date" class="w-full p-2 border rounded mt-1"></div>
+                        <div><label class="font-bold text-gray-700">Thành tựu lớn nhất tuần trước (Win):</label><textarea data-field="su_win" class="w-full p-2 border rounded mt-1 h-20" placeholder="Điều gì khiến bạn tự hào nhất?"></textarea></div>
+                        <div><label class="font-bold text-gray-700">Ưu tiên SỐ 1 trong tuần này (Priority):</label><textarea data-field="su_priority" class="w-full p-2 border rounded mt-1 h-20" placeholder="Một việc quan trọng nhất bạn phải hoàn thành là gì?"></textarea></div>
+                        <div><label class="font-bold text-gray-700">Khó khăn/Rào cản đang gặp phải (Blocker):</label><textarea data-field="su_blocker" class="w-full p-2 border rounded mt-1 h-20" placeholder="Bạn cần sự trợ giúp ở đâu?"></textarea></div>
+                    </div>`,
+                example: `
+                    <h2 class="text-2xl font-bold text-[var(--color-blue-dark)] mb-6">Ví dụ: Họp đầu tuần</h2>
+                     <div class="p-4 border rounded-lg bg-gray-50 text-left">
+                        <p class="mb-4"><strong>Logic:</strong> Buổi họp này không phải để báo cáo chi li, mà để tạo sự kết nối, động lực và giải quyết vấn đề nhanh chóng. Mỗi người chỉ nói trong 1-2 phút.</p>
+                        <p><strong>Ngày:</strong> 29/09/2025</p>
+                        <p><strong>Thành tựu tuần trước:</strong> Hoàn thành 5 buổi demo và nhận được phản hồi rất tích cực từ khách hàng tiềm năng A.</p>
+                        <p><strong>Ưu tiên SỐ 1 tuần này:</strong> Gửi báo giá và follow-up với KH A để có được cam kết chốt trong tuần.</p>
+                        <p><strong>Khó khăn/Rào cản:</strong> Em đang cần thêm một case study trong ngành F&B để thuyết phục KH A. Nhờ team marketing hỗ trợ ạ.</p>
+                    </div>`
+            },
+            'win-of-week': {
+                guide: `
+                    <h2 class="text-2xl font-bold text-[var(--color-blue-dark)] mb-4">Cẩm nang: "Win of the Week"</h2>
+                    <div class="guide text-left">
+                        <h3>Mục đích & Giá trị</h3>
+                        <p>Đây là một nghi thức đơn giản nhưng cực kỳ mạnh mẽ để kết thúc một tuần làm việc. Nó không chỉ để vinh danh cá nhân, mà quan trọng hơn là để <strong>nhân rộng các hành vi tốt</strong> và lan tỏa kiến thức thực chiến trong toàn đội ngũ. Việc chia sẻ câu chuyện thành công giúp các thành viên khác học hỏi, tạo ra năng lượng tích cực và xây dựng một văn hóa chiến thắng.</p>
+                        <h3>Hướng dẫn từng bước</h3>
+                        <ul>
+                            <li><strong>Thời gian:</strong> Dành 15-20 phút vào cuối ngày thứ Sáu.</li>
+                            <li><strong>Cấu trúc S-A-R:</strong> Hướng dẫn mọi người chia sẻ câu chuyện của mình theo cấu trúc đơn giản: <strong>S</strong>ituation (Tình huống), <strong>A</strong>ction (Hành động), <strong>R</strong>esult (Kết quả & Bài học).</li>
+                            <li><strong>Tập trung vào "Hành động":</strong> Khuyến khích mọi người chia sẻ chi tiết về "họ đã làm gì khác biệt", "họ đã dùng câu nói nào", "họ đã áp dụng kỹ năng gì". Đây là phần giá trị nhất cho những người khác.</li>
+                        </ul>
+                        <h3>Bí quyết Thành công</h3>
+                        <ul>
+                            <li><strong>Ăn mừng cả những chiến thắng nhỏ:</strong> Một "chiến thắng" không nhất thiết phải là một hợp đồng lớn. Đó có thể là một cuộc hẹn khó, một lời từ chối được xử lý tốt, một khách hàng được hỗ trợ tận tình.</li>
+                            <li><strong>Quản lý là người điều phối:</strong> Vai trò của quản lý là đặt câu hỏi gợi mở để người chia sẻ làm rõ hơn bài học của họ.</li>
+                            <li><strong>Tạo không khí vui vẻ:</strong> Đây nên là một buổi sinh hoạt thoải mái, không áp lực.</li>
+                        </ul>
+                    </div>`,
+                form: `
+                    <h2 class="text-2xl font-bold text-[var(--color-blue-dark)] mb-6">Chia sẻ "Win of the Week"</h2>
+                    <div class="space-y-6">
+                        <div><label class="font-bold text-gray-700">Tên "Chiến thắng" (Ngắn gọn, hấp dẫn):</label><input type="text" data-field="wow_name" class="w-full p-2 border rounded mt-1" placeholder="VD: Biến lời từ chối thành cơ hội"></div>
+                        <div><label class="font-bold text-gray-700">Tình huống (Situation):</label><textarea data-field="wow_situation" class="w-full p-2 border rounded mt-1 h-20" placeholder="Chuyện gì đã xảy ra? Bối cảnh là gì?"></textarea></div>
+                        <div><label class="font-bold text-gray-700">Hành động (Action):</label><textarea data-field="wow_action" class="w-full p-2 border rounded mt-1 h-20" placeholder="Bạn đã làm gì khác biệt? Bạn đã áp dụng kỹ năng hay kiến thức nào?"></textarea></div>
+                        <div><label class="font-bold text-gray-700">Kết quả & Bài học (Result & Lesson):</label><textarea data-field="wow_result" class="w-full p-2 border rounded mt-1 h-20" placeholder="Kết quả đạt được là gì? Bài học mà cả team có thể học hỏi là gì?"></textarea></div>
+                    </div>`,
+                example: `
+                     <h2 class="text-2xl font-bold text-[var(--color-blue-dark)] mb-6">Ví dụ: "Win of the Week"</h2>
+                    <div class="p-4 border rounded-lg bg-gray-50 text-left">
+                         <p class="mb-4"><strong>Logic:</strong> Nghi thức này không chỉ để vinh danh cá nhân mà quan trọng hơn là để nhân rộng các hành vi tốt và lan tỏa kiến thức thực chiến trong toàn đội ngũ.</p>
+                        <p><strong>Tên "Chiến thắng":</strong> "Câu hỏi vàng" mở khóa hợp đồng.</p>
+                        <p><strong>Tình huống:</strong> Khách hàng đã im lặng 1 tuần sau khi nhận báo giá. Em đã định gửi email follow-up chung chung.</p>
+                        <p><strong>Hành động:</strong> Thay vì hỏi "Anh/chị xem báo giá chưa ạ?", em đã gọi và hỏi: "Em chào anh/chị, không biết trong đề xuất của em, điểm nào còn chưa rõ ràng nhất ạ?".</p>
+                        <p><strong>Kết quả & Bài học:</strong> Khách hàng đã cởi mở chia sẻ rằng họ lo ngại về khâu triển khai. Em đã giải đáp được và họ đã ký hợp đồng ngay sau đó. Bài học: Đừng giả định, hãy hỏi những câu hỏi chất lượng để tìm ra vấn đề thực sự.</p>
+                    </div>`
+            },
+            'performance-review': {
+                guide: `
+                    <h2 class="text-2xl font-bold text-[var(--color-blue-dark)] mb-4">Cẩm nang: Đánh giá Hiệu suất Quý</h2>
+                    <div class="guide text-left">
+                        <h3>Mục đích & Giá trị</h3>
+                        <p>Đây không phải là một buổi "phán xét" cuối kỳ. Mục đích của buổi đánh giá hiệu suất hiện đại là một cuộc đối thoại hai chiều, tập trung vào sự phát triển trong tương lai. Nó giúp nhân viên hiểu rõ họ đang đứng ở đâu, ghi nhận những nỗ lực của họ, xác định các lĩnh vực cần cải thiện và cùng nhau xây dựng một kế hoạch hành động cho quý tiếp theo.</p>
+                        <h3>Hướng dẫn từng bước</h3>
+                        <ul>
+                            <li><strong>Chuẩn bị trước:</strong> Cả quản lý và nhân viên đều cần xem lại dữ liệu (KPIs, kết quả) và chuẩn bị các ý chính trước buổi họp. Gửi cho nhân viên biểu mẫu này để họ tự đánh giá trước.</li>
+                            <li><strong>Nhìn lại (Review):</strong> Bắt đầu bằng việc xem xét các kết quả một cách khách quan dựa trên dữ liệu.</li>
+                            <li><strong>Ghi nhận (Recognize):</strong> Luôn bắt đầu bằng việc ghi nhận những thành tựu và nỗ lực. Điều này tạo ra một không khí tích cực và cởi mở.</li>
+                            <li><strong>Thảo luận (Discuss):</strong> Thảo luận về những thách thức và bài học một cách xây dựng. Tập trung vào "vấn đề", không phải "con người".</li>
+                            <li><strong>Lên kế hoạch (Plan):</strong> Cùng nhau thiết lập các mục tiêu phát triển (không chỉ là mục tiêu doanh số) và các hành động cụ thể cho quý tới.</li>
+                        </ul>
+                        <h3>Bí quyết Thành công</h3>
+                        <ul>
+                            <li><strong>Đối thoại, không độc thoại:</strong> Tỷ lệ nói nên là 50/50. Hãy lắng nghe nhiều hơn.</li>
+                            <li><strong>Không có gì bất ngờ:</strong> Một buổi đánh giá tốt không nên có bất kỳ thông tin bất ngờ nào. Các phản hồi nên được đưa ra thường xuyên trong suốt quý.</li>
+                            <li><strong>Kết thúc bằng cam kết:</strong> Buổi họp phải kết thúc bằng những hành động cụ thể mà cả hai bên cùng cam kết thực hiện.</li>
+                        </ul>
+                    </div>`,
+                form: `
+                    <h2 class="text-2xl font-bold text-[var(--color-blue-dark)] mb-6">Biên bản Đánh giá Hiệu suất Quý</h2>
+                    <div class="space-y-6">
+                        <div><label class="font-bold text-gray-700">Nhân viên:</label><input type="text" data-field="pr_name" class="w-full p-2 border rounded mt-1"></div>
+                        <div><label class="font-bold text-gray-700">Quý:</label><input type="text" data-field="pr_quarter" class="w-full p-2 border rounded mt-1" placeholder="VD: Q4/2025"></div>
+                        <div><label class="font-bold text-gray-700">1. Nhìn lại (Review): Các kết quả chính so với mục tiêu (Dựa trên dữ liệu):</label><textarea data-field="pr_review" class="w-full p-2 border rounded mt-1 h-24"></textarea></div>
+                        <div><label class="font-bold text-gray-700">2. Ghi nhận (Recognize): Thành tựu đáng tự hào nhất & các hành vi tốt:</label><textarea data-field="pr_recognize" class="w-full p-2 border rounded mt-1 h-24"></textarea></div>
+                        <div><label class="font-bold text-gray-700">3. Thảo luận (Discuss): Thách thức lớn nhất, bài học rút ra và các điểm cần cải thiện:</label><textarea data-field="pr_discuss" class="w-full p-2 border rounded mt-1 h-24"></textarea></div>
+                        <div><label class="font-bold text-gray-700">4. Lên kế hoạch (Plan): Mục tiêu phát triển & hành động cụ thể cho quý tới:</label><textarea data-field="pr_plan" class="w-full p-2 border rounded mt-1 h-24"></textarea></div>
+                    </div>`,
+                example: `
+                    <h2 class="text-2xl font-bold text-[var(--color-blue-dark)] mb-6">Ví dụ: Đánh giá Hiệu suất Quý</h2>
+                    <div class="p-4 border rounded-lg bg-gray-50 text-left">
+                         <p class="mb-4"><strong>Logic:</strong> Đây là một cuộc đối thoại hai chiều, tập trung vào sự phát triển trong tương lai, không phải là một buổi "phán xét" quá khứ. Dữ liệu được dùng để làm nền tảng cho cuộc thảo luận, không phải là "vũ khí".</p>
+                        <p><strong>Nhân viên:</strong> Nguyễn Văn An</p>
+                        <p><strong>Quý:</strong> Q3/2025</p>
+                        <p><strong>1. Nhìn lại:</strong> Doanh số đạt 115% mục tiêu. Tỷ lệ thắng tăng 5%. Tuy nhiên, số lượng cơ hội mới tạo ra thấp hơn 10% so với mục tiêu.</p>
+                        <p><strong>2. Ghi nhận:</strong> Rất ấn tượng với cách An xử lý thương vụ với công ty XYZ, thể hiện kỹ năng đàm phán và xử lý từ chối rất tốt. Anh cũng đánh giá cao việc An luôn sẵn sàng hỗ trợ các bạn mới.</p>
+                        <p><strong>3. Thảo luận:</strong> Dường như An đang tập trung quá nhiều vào việc chăm sóc các deal lớn ở giai đoạn cuối mà chưa dành đủ thời gian cho việc tìm kiếm khách hàng mới. Bài học là cần cân bằng giữa "săn bắn" và "chăm sóc".</p>
+                        <p><strong>4. Lên kế hoạch:</strong> Trong Q4, mục tiêu phát triển của An là cải thiện kỹ năng quản lý thời gian và prospecting. Hành động cụ thể: Dành 1 giờ cố định mỗi sáng (9-10h) cho việc prospecting, và chúng ta sẽ có một buổi huấn luyện riêng về kỹ thuật cold-emailing.</p>
+                    </div>`
+            },
+        },
+
+        init() {
+            this.renderMainTab();
+            this.addEventListeners();
+            this.loadAllData();
+        },
+        
+        renderMainTab() {
+            const mainTab = this.state.activeMainTab;
+            const mainContentArea = document.getElementById('main-content-area');
+            let subNavHTML = '';
+            let firstSubTabKey = '';
+
+            if (mainTab === 'clarity') {
+                subNavHTML = [
+                    this.templates.subNavButton('clarity', 'job-description', 'fa-user-tie', 'Mô tả Công việc'),
+                    this.templates.subNavButton('clarity', 'kpi-scorecard', 'fa-chart-line', 'Bảng điểm KPI'),
+                    this.templates.subNavButton('clarity', 'customer-journey', 'fa-map-signs', 'Hành trình Khách hàng')
+                ].join('');
+                firstSubTabKey = 'job-description';
+            } else if (mainTab === 'systems') {
+                subNavHTML = [
+                    this.templates.subNavButton('systems', 'sales-process', 'fa-project-diagram', 'Quy trình Bán hàng'),
+                    this.templates.subNavButton('systems', 'objection-playbook', 'fa-shield-alt', 'Playbook Xử lý Từ chối'),
+                    this.templates.subNavButton('systems', 'crm-rule', 'fa-database', 'Quy tắc CRM')
+                ].join('');
+                firstSubTabKey = 'sales-process';
+            } else if (mainTab === 'rituals') {
+                 subNavHTML = [
+                    this.templates.subNavButton('rituals', 'stand-up', 'fa-users', 'Họp đầu tuần'),
+                    this.templates.subNavButton('rituals', 'win-of-week', 'fa-trophy', 'Win of the Week'),
+                    this.templates.subNavButton('rituals', 'performance-review', 'fa-clipboard-check', 'Đánh giá Hiệu suất')
+                ].join('');
+                firstSubTabKey = 'stand-up';
+            }
+            
+            this.state.activeSubTabs[mainTab] = this.state.activeSubTabs[mainTab] || firstSubTabKey;
+            
+            mainContentArea.innerHTML = this.templates.mainTabShell(mainTab, subNavHTML);
+            this.renderSubTab();
+        },
+
+        renderSubTab() {
+            const mainTab = this.state.activeMainTab;
+            const subTab = this.state.activeSubTabs[mainTab];
+            const contentWrapper = document.getElementById(`${mainTab}-content-wrapper`);
+            if (!contentWrapper) return;
+            
+            contentWrapper.innerHTML = this.templates.subTabShell(subTab);
+
+            this.state.activeModes[subTab] = this.state.activeModes[subTab] || 'guide';
+            this.renderFormOrExample();
+
+            document.querySelectorAll(`#${mainTab}-sub-nav .sub-tab-btn`).forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.subTab === subTab);
+            });
+        },
+        
+        renderFormOrExample() {
+            const mainTab = this.state.activeMainTab;
+            const subTab = this.state.activeSubTabs[mainTab];
+            const mode = this.state.activeModes[subTab];
+            const contentArea = document.getElementById(`${subTab}-content-area`);
+
+            if (contentArea && this.templates[subTab] && this.templates[subTab][mode]) {
+                 contentArea.innerHTML = this.templates[subTab][mode];
+            } else {
+                 contentArea.innerHTML = '<p class="text-center text-gray-500">Nội dung đang được cập nhật...</p>';
+            }
+
+            document.querySelectorAll(`.mode-btn[data-sub-tab="${subTab}"]`).forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.mode === mode);
+            });
+        },
+
+        addEventListeners() {
+            document.querySelectorAll('.main-tab-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    this.state.activeMainTab = e.currentTarget.dataset.mainTab;
+                    document.querySelectorAll('.main-tab-btn').forEach(b => b.classList.remove('active'));
+                    e.currentTarget.classList.add('active');
+                    this.renderMainTab();
+                    this.loadData();
+                });
+            });
+
+            document.getElementById('main-content-area').addEventListener('click', (e) => {
+                const subTabBtn = e.target.closest('.sub-tab-btn');
+                const modeBtn = e.target.closest('.mode-btn');
+                const printBtn = e.target.closest('.print-btn');
+
+                if (subTabBtn) {
+                    const mainTab = subTabBtn.dataset.mainTab;
+                    const subTab = subTabBtn.dataset.subTab;
+                    this.state.activeSubTabs[mainTab] = subTab;
+                    this.renderSubTab();
+                    this.loadData();
+                }
+                if (modeBtn) {
+                    const subTab = modeBtn.dataset.subTab;
+                    const mode = modeBtn.dataset.mode;
+                    this.state.activeModes[subTab] = mode;
+                    this.renderFormOrExample();
+                    if (mode === 'form') {
+                        this.loadData();
+                    }
+                }
+                if (printBtn) {
+                    this.print(printBtn.dataset.target);
+                }
+            });
+
+            document.getElementById('main-content-area').addEventListener('input', (e) => {
+                 if (e.target.matches('input[data-field], textarea[data-field]')) {
+                    this.saveData();
+                 }
+            });
+            
+            document.querySelector(`.main-tab-btn[data-main-tab="${this.state.activeMainTab}"]`).classList.add('active');
+        },
+        
+        saveData() {
+            const mainTab = this.state.activeMainTab;
+            const subTab = this.state.activeSubTabs[mainTab];
+            const dataToSave = {};
+            document.querySelectorAll(`#${subTab}-content-area [data-field]`).forEach(input => {
+                dataToSave[input.dataset.field] = input.value;
+            });
+            localStorage.setItem(`formData-${subTab}`, JSON.stringify(dataToSave));
+        },
+
+        loadData() {
+            const mainTab = this.state.activeMainTab;
+            const subTab = this.state.activeSubTabs[mainTab];
+            if (this.state.activeModes[subTab] !== 'form') return;
+
+            const savedData = JSON.parse(localStorage.getItem(`formData-${subTab}`) || '{}');
+            for (const [key, value] of Object.entries(savedData)) {
+                const input = document.querySelector(`#${subTab}-content-area [data-field="${key}"]`);
+                if (input) {
+                    input.value = value;
+                }
+            }
+        },
+
+        loadAllData() {
+            const allToolKeys = Object.keys(this.templates).filter(key => !['mainTabShell', 'subNavButton', 'subTabShell'].includes(key));
+            allToolKeys.forEach(key => {
+                this.state.activeModes[key] = this.state.activeModes[key] || 'guide';
+            });
+        },
+        
+        print() {
+             window.print();
+        }
+    };
+    
+    app.init();
+});
+</script>
+
+</body>
+</html>
+
